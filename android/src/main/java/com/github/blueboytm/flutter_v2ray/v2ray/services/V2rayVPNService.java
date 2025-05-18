@@ -9,6 +9,9 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import com.github.blueboytm.flutter_v2ray.v2ray.core.V2rayCoreManager;
 import com.github.blueboytm.flutter_v2ray.v2ray.interfaces.V2rayServicesListener;
 import com.github.blueboytm.flutter_v2ray.v2ray.utils.AppConfigs;
@@ -25,6 +28,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class V2rayVPNService extends VpnService implements V2rayServicesListener {
+
+    private Handler stopHandler = new Handler(Looper.getMainLooper());
+    private Runnable stopRunnable;
     private ParcelFileDescriptor mInterface;
     private Process process;
     private V2rayConfig v2rayConfig;
@@ -41,6 +47,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         AppConfigs.V2RAY_SERVICE_COMMANDS startCommand = (AppConfigs.V2RAY_SERVICE_COMMANDS) intent.getSerializableExtra("COMMAND");
         if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE)) {
             v2rayConfig = (V2rayConfig) intent.getSerializableExtra("V2RAY_CONFIG");
+            int secs = intent.getSerializableExtra("AUTO_STOP");
             if (v2rayConfig == null) {
                 this.onDestroy();
             }
@@ -49,6 +56,9 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             }
             if (V2rayCoreManager.getInstance().startCore(v2rayConfig)) {
                 Log.e(V2rayProxyOnlyService.class.getSimpleName(), "onStartCommand success => v2ray core started.");
+                if (secs > 0) {
+                    scheduleAutoStop(secs);
+                }
             } else {
                 this.onDestroy();
             }
@@ -203,13 +213,14 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                     break;
                 } catch (Exception e) {
                     Log.e(V2rayVPNService.class.getSimpleName(), "sendFd failed =>", e);
-                    if (tries > 5) break;
+                    if (tries > 5) {
+                        break;
+                    }
                     tries += 1;
                 }
             }
         }, "sendFd_Thread").start();
     }
-
 
     @Override
     public void onDestroy() {
@@ -239,5 +250,16 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
     @Override
     public void stopService() {
         stopAllProcess();
+    }
+
+    private void scheduleAutoStop(int seconds) {
+        if (stopRunnable != null) {
+            stopHandler.removeCallbacks(stopRunnable);
+        }
+        stopRunnable = () -> {
+            Log.d("V2rayVPNService", "Auto-stopping VPN after " + hours + " hours");
+            stopService();
+        };
+        stopHandler.postDelayed(stopRunnable, seconds * 1000L); // hours to milliseconds
     }
 }
