@@ -45,6 +45,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required String notificationDisconnectButtonName,
     List<String>? blockedApps,
     List<String>? bypassSubnets,
+    int secs = 0,
     bool proxyOnly = false,
   }) async {
     await methodChannel.invokeMethod('startV2Ray', {
@@ -54,6 +55,7 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
       "bypass_subnets": bypassSubnets,
       "proxy_only": proxyOnly,
       "notificationDisconnectButtonName": notificationDisconnectButtonName,
+      "secs": secs
     });
   }
 

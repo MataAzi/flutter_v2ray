@@ -47,7 +47,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
         AppConfigs.V2RAY_SERVICE_COMMANDS startCommand = (AppConfigs.V2RAY_SERVICE_COMMANDS) intent.getSerializableExtra("COMMAND");
         if (startCommand.equals(AppConfigs.V2RAY_SERVICE_COMMANDS.START_SERVICE)) {
             v2rayConfig = (V2rayConfig) intent.getSerializableExtra("V2RAY_CONFIG");
-            int secs = intent.getSerializableExtra("AUTO_STOP");
+            int secs = intent.getIntExtra("AUTO_STOP", 0);
             if (v2rayConfig == null) {
                 this.onDestroy();
             }
@@ -257,7 +257,7 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             stopHandler.removeCallbacks(stopRunnable);
         }
         stopRunnable = () -> {
-            Log.d("V2rayVPNService", "Auto-stopping VPN after " + hours + " hours");
+            Log.d("V2rayVPNService", "Auto-stopping VPN after " + seconds + " seconds");
             stopService();
         };
         stopHandler.postDelayed(stopRunnable, seconds * 1000L); // hours to milliseconds
